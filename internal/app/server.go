@@ -1,15 +1,17 @@
 package app
 
 import (
-	"github.com/gorilla/mux"
 	"github.com/ikhwankhaleed/morent/config"
+	"github.com/ikhwankhaleed/morent/internal/handlers"
+	"github.com/ikhwankhaleed/morent/internal/repositories"
+	"github.com/ikhwankhaleed/morent/internal/services"
 	"github.com/jmoiron/sqlx"
+	"github.com/labstack/echo/v4"
 	"log"
-	"net/http"
 )
 
 type Server struct {
-	router *mux.Router
+	router *echo.Echo
 	db     *sqlx.DB
 }
 
@@ -19,20 +21,29 @@ func NewServer(cfg *config.Config) *Server {
 		log.Fatalf("[APP] failed to connect with database : %v", err)
 	}
 
-	router := mux.NewRouter()
+	e := echo.New()
 
 	//init here
+	userRepo := repositories.NewUserRepository(db)
+	userService := services.NewUserService(userRepo)
+	userHandler := handlers.NewUserHandler(userService)
 
 	//routes here
-	router.HandleFunc("/register").Methods("POST")
+	v1 := e.Group("/v1")
+	{
+		users := v1.Group("/users")
+		{
+			users.POST("/register", userHandler.RegisterUser)
+		}
+	}
 
 	return &Server{
-		router: router,
+		router: e,
 		db:     db,
 	}
 }
 
 func (s *Server) Run() error {
 	log.Println("Starting server on :8080")
-	return http.ListenAndServe(":8080", s.router)
+	return s.router.Start(":8080")
 }

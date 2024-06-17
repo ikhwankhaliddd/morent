@@ -13,7 +13,7 @@ func main() {
 	}
 
 	server := app.NewServer(cfg)
-	if err := server.Run(); err != nil {
+	if err = server.Run(); err != nil {
 		log.Fatalf("Failed to run server: %v", err)
 	}
 }
