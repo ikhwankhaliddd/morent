@@ -26,7 +26,8 @@ func NewServer(cfg *config.Config) *Server {
 	//init here
 	userRepo := repositories.NewUserRepository(db)
 	userService := services.NewUserService(userRepo)
-	userHandler := handlers.NewUserHandler(userService)
+	authService := services.NewAuthService()
+	userHandler := handlers.NewUserHandler(userService, authService)
 
 	//routes here
 	v1 := e.Group("/v1")
@@ -34,6 +35,7 @@ func NewServer(cfg *config.Config) *Server {
 		users := v1.Group("/users")
 		{
 			users.POST("/register", userHandler.RegisterUser)
+			users.POST("/login", userHandler.Login)
 		}
 	}
 

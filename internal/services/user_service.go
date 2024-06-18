@@ -42,6 +42,35 @@ func (us *UserService) RegisterUser(ctx context.Context, data utils.UserDTO) err
 	err = us.repo.InsertUser(ctx, userData)
 	if err != nil {
 		log.Printf("[User Service] Error Register User with error : %v", err)
+		return err
 	}
 	return nil
+}
+
+func (us *UserService) LoginUser(ctx context.Context, email, password string) (result utils.UserDTO, err error) {
+	userData, err := us.repo.GetUser(ctx, email)
+	if err != nil {
+		log.Printf("[User Service] Error Login User with error : %v", err)
+		return result, err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(userData.PasswordHash), []byte(password))
+	if err != nil {
+		log.Printf("[User Service] Error Login User with error : %v", err)
+		return result, err
+	}
+	phoneNumber := utils.NullStringToString(userData.PhoneNumber)
+	profilePicture := utils.NullStringToString(userData.ProfilePicture)
+	updatedAt := utils.NullTimeToTime(userData.UpdatedAt)
+
+	result = utils.UserDTO{
+		Name:           userData.Name,
+		Email:          userData.Email,
+		PasswordHash:   userData.PasswordHash,
+		PhoneNumber:    profilePicture,
+		ProfilePicture: phoneNumber,
+		CreatedAt:      userData.CreatedAt,
+		UpdatedAt:      updatedAt,
+	}
+	return result, nil
 }

@@ -9,12 +9,14 @@ import (
 )
 
 type UserHandler struct {
-	service *services.UserService
+	service     *services.UserService
+	authService *services.AuthService
 }
 
-func NewUserHandler(service *services.UserService) UserHandler {
+func NewUserHandler(service *services.UserService, authService *services.AuthService) UserHandler {
 	return UserHandler{
-		service: service,
+		service:     service,
+		authService: authService,
 	}
 }
 
@@ -54,5 +56,39 @@ func (h *UserHandler) RegisterUser(c echo.Context) error {
 	}
 
 	response := utils.CreateResponse("SUCCESS", http.StatusOK, nil, nil)
+	return c.JSON(http.StatusOK, response)
+}
+
+func (h *UserHandler) Login(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	type request struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	req := request{}
+
+	if err := c.Bind(&req); err != nil {
+		log.Printf("[User Handler] error login user with error : %v", err)
+		response := utils.CreateResponse(err.Error(), http.StatusBadRequest, nil, nil)
+		return c.JSON(http.StatusBadRequest, response)
+	}
+
+	result, err := h.service.LoginUser(ctx, req.Email, req.Password)
+	if err != nil {
+		log.Printf("[User Handler] error login user with error : %v", err)
+		response := utils.CreateResponse(err.Error(), http.StatusInternalServerError, nil, nil)
+		return c.JSON(http.StatusInternalServerError, response)
+	}
+
+	authToken, err := h.authService.GenerateToken(result.Email)
+	if err != nil {
+		log.Printf("[User Handler] error login user with error : %v", err)
+		response := utils.CreateResponse(err.Error(), http.StatusInternalServerError, nil, nil)
+		return c.JSON(http.StatusInternalServerError, response)
+	}
+
+	response := utils.CreateResponse("SUCCESS", http.StatusOK, authToken, nil)
 	return c.JSON(http.StatusOK, response)
 }
