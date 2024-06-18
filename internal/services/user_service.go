@@ -74,3 +74,27 @@ func (us *UserService) LoginUser(ctx context.Context, email, password string) (r
 	}
 	return result, nil
 }
+
+func (us *UserService) GetUserByEmail(ctx context.Context, email string) (result utils.UserDTO, err error) {
+	userData, err := us.repo.GetUser(ctx, email)
+	if err != nil {
+		log.Printf("[User Service] Error GetUserByEmail with error : %v", err)
+		return result, err
+	}
+
+	phoneNumber := utils.NullStringToString(userData.PhoneNumber)
+	profilePicture := utils.NullStringToString(userData.ProfilePicture)
+	updatedAt := utils.NullTimeToTime(userData.UpdatedAt)
+
+	result = utils.UserDTO{
+		Name:           userData.Name,
+		Email:          userData.Email,
+		PasswordHash:   userData.PasswordHash,
+		PhoneNumber:    profilePicture,
+		ProfilePicture: phoneNumber,
+		CreatedAt:      userData.CreatedAt,
+		UpdatedAt:      updatedAt,
+	}
+
+	return result, nil
+}
